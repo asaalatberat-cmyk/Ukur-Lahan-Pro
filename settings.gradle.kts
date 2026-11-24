@@ -13,4 +13,4 @@ dependencyResolutionManagement {
     }
 }
 rootProject.name = "UkurLahanPro"
-include(":app")
+include(":app", ":common", ":laporan")

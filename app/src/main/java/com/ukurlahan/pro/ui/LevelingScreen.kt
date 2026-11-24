@@ -77,8 +77,8 @@ fun LevelingScreen(onBack: () -> Unit) {
     ScreenScaffold(
         "Sipat Datar Kamera", onBack,
         actions = {
-            IconButton(onClick = { exportLeveling(ctx, refName, refElevText, design, points) }) {
-                Icon(Icons.Default.Share, "Ekspor")
+            ExportButton(setOf(com.ukurlahan.pro.data.Module.LEVELING)) {
+                exportLeveling(ctx, refName, refElevText, design, points)
             }
             IconButton(onClick = { askReset = true }) { Icon(Icons.Default.Refresh, "Proyek baru") }
         },

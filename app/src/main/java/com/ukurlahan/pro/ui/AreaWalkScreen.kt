@@ -139,7 +139,7 @@ fun AreaWalkScreen(onBack: () -> Unit) {
     ScreenScaffold(
         "Luas Lahan Berjalan", onBack,
         actions = {
-            IconButton(onClick = { exportArea(ctx, name, pts, area, perim) }) { Icon(Icons.Default.Share, "Ekspor") }
+            ExportButton(setOf(com.ukurlahan.pro.data.Module.AREA), csvLabel = "🧾 Ekspor CSV / KML") { exportArea(ctx, name, pts, area, perim) }
             IconButton(onClick = { askReset = true }) { Icon(Icons.Default.Refresh, "Baru") }
         },
     ) { pad ->
@@ -176,7 +176,7 @@ fun AreaWalkScreen(onBack: () -> Unit) {
                     fix?.let {
                         OverlayText(String.format(Locale.US, "%.6f, %.6f", it.latitude, it.longitude))
                     }
-                    OverlayText("Titik: ${pts.size}   Luas: ${area.f(1)} m²", color = Accent)
+                    OverlayText("Titik: ${pts.size}   Luas: ${formatHa(area)}", color = Accent)
                 }
                 TextButton(onClick = { showCam = !showCam }, modifier = Modifier.align(Alignment.TopEnd)) {
                     Text(if (showCam) "Sembunyikan kamera" else "Tampilkan kamera", fontSize = 11.sp)
@@ -212,8 +212,8 @@ fun AreaWalkScreen(onBack: () -> Unit) {
             SectionCard("Hasil") {
                 OutlinedTextField(name, { name = it }, label = { Text("Nama lahan") }, singleLine = true, modifier = Modifier.fillMaxWidth())
                 PolygonView(xy, Modifier.fillMaxWidth().height(260.dp), closed = pts.size >= 3)
-                InfoRow("Luas", "${area.f(2)} m²", Accent)
-                InfoRow("", "${(area / 100).f(2)} are  •  ${(area / 10000).f(4)} ha")
+                InfoRow("Luas", formatHa(area), Accent)
+                InfoRow("", "= ${area.f(2)} m²  (1 ha = 10.000 m²)")
                 InfoRow("Keliling", "${perim.f(2)} m")
                 if (pts.size in 3..12) {
                     Geo.sides(xy).forEachIndexed { i, s ->
@@ -223,7 +223,7 @@ fun AreaWalkScreen(onBack: () -> Unit) {
                 if (pts.isNotEmpty()) {
                     val worst = pts.maxOf { it.acc }
                     Text(
-                        "Perkiraan ketelitian: ±${(perim * worst / 2).f(0)} m² (dari akurasi GPS ±${worst.f(1)} m)",
+                        "Perkiraan ketelitian: ±${(perim * worst / 2 / 10000).f(4)} ha (dari akurasi GPS ±${worst.f(1)} m)",
                         fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
                 }
@@ -231,7 +231,7 @@ fun AreaWalkScreen(onBack: () -> Unit) {
 
             Text(
                 "Tips: di setiap sudut lahan, berdiri tepat di atas patok, diamkan HP 5 detik, lalu tekan TANDAI SUDUT. " +
-                    "Lakukan di tempat terbuka. GPS HP biasa ±3–5 m, sehingga cocok untuk lahan > 500 m². " +
+                    "Lakukan di tempat terbuka. GPS HP biasa ±3–5 m, sehingga cocok untuk lahan > 0,05 ha (500 m²). " +
                     "Untuk lahan kecil gunakan Total Station Kamera.",
                 fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
@@ -255,7 +255,7 @@ private fun exportArea(ctx: Context, name: String, pts: List<GeoPt>, area: Doubl
     }
     val safe = name.replace(Regex("[^A-Za-z0-9_-]"), "_")
     // CSV
-    val csv = StringBuilder("Nama,$name\nLuas (m2),${area.f(3)}\nLuas (ha),${(area / 10000).f(5)}\nKeliling (m),${perim.f(3)}\n\n")
+    val csv = StringBuilder("Nama,$name\nLuas (ha),${(area / 10000).f(5)}\nLuas (m2),${area.f(3)}\nKeliling (m),${perim.f(3)}\n\n")
     csv.append("No,Lintang,Bujur,Akurasi (m),Tinggi GPS (m)\n")
     pts.forEachIndexed { i, p ->
         csv.append("${i + 1},${String.format(Locale.US, "%.8f", p.lat)},${String.format(Locale.US, "%.8f", p.lon)},${p.acc.f(1)},${p.alt.f(1)}\n")
@@ -267,7 +267,7 @@ private fun exportArea(ctx: Context, name: String, pts: List<GeoPt>, area: Doubl
     val kml = """<?xml version="1.0" encoding="UTF-8"?>
 <kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>$name</name>
 <Style id="s"><LineStyle><color>ff00b3ff</color><width>3</width></LineStyle><PolyStyle><color>5500b3ff</color></PolyStyle></Style>
-<Placemark><name>$name</name><description>Luas ${area.f(2)} m2 (${(area / 10000).f(4)} ha), keliling ${perim.f(2)} m</description><styleUrl>#s</styleUrl>
+<Placemark><name>$name</name><description>Luas ${(area / 10000).f(4)} ha (${area.f(2)} m2), keliling ${perim.f(2)} m</description><styleUrl>#s</styleUrl>
 <Polygon><outerBoundaryIs><LinearRing><coordinates>$coords</coordinates></LinearRing></outerBoundaryIs></Polygon></Placemark>
 </Document></kml>"""
     val choices = arrayOf("CSV (Excel)", "KML (Google Earth)")

@@ -79,7 +79,7 @@ fun TotalStationScreen(onBack: () -> Unit) {
     ScreenScaffold(
         "Total Station Kamera", onBack,
         actions = {
-            IconButton(onClick = { exportTs(ctx, hiV, stElev, points) }) { Icon(Icons.Default.Share, "Ekspor") }
+            ExportButton(setOf(com.ukurlahan.pro.data.Module.TOTAL_STATION)) { exportTs(ctx, hiV, stElev, points) }
             IconButton(onClick = { askReset = true }) { Icon(Icons.Default.Refresh, "Baru") }
         },
     ) { pad ->

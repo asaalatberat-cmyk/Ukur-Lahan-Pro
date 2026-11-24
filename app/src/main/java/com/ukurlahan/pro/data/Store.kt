@@ -9,10 +9,11 @@ import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
 
-/** Penyimpanan sederhana berbasis file JSON di memori internal aplikasi. */
+/** Penyimpanan berbasis file JSON, terpisah untuk setiap proyek. */
 object Store {
-    private fun file(ctx: Context, key: String) = File(ctx.filesDir, "$key.json")
+    private fun file(ctx: Context, key: String) = File(Projects.dir(ctx, Projects.activeId(ctx)), "$key.json")
 
+    /** Simpan ke proyek yang sedang aktif. */
     fun save(ctx: Context, key: String, text: String) {
         try {
             file(ctx, key).writeText(text)
@@ -20,8 +21,16 @@ object Store {
         }
     }
 
+    /** Baca dari proyek yang sedang aktif. */
     fun load(ctx: Context, key: String): String? = try {
         file(ctx, key).takeIf { it.exists() }?.readText()
+    } catch (_: Exception) {
+        null
+    }
+
+    /** Baca dari proyek tertentu. */
+    fun loadFrom(ctx: Context, projectId: String, key: String): String? = try {
+        File(Projects.dir(ctx, projectId), "$key.json").takeIf { it.exists() }?.readText()
     } catch (_: Exception) {
         null
     }

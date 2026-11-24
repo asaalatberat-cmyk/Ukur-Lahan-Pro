@@ -32,13 +32,18 @@ import kotlin.math.tan
 @Composable
 fun VolumeScreen(onBack: () -> Unit) {
     val ctx = LocalContext.current
-    var rowsText by remember { mutableStateOf("4") }
-    var colsText by remember { mutableStateOf("4") }
-    var spacingText by remember { mutableStateOf("5") }
-    var designText by remember { mutableStateOf("") }
-    var swellText by remember { mutableStateOf("25") }
-    var truckText by remember { mutableStateOf("7") }
-    val grid = remember { mutableStateMapOf<String, String>() }
+    val saved = remember { com.ukurlahan.pro.data.VolumeData.load(ctx) }
+    var rowsText by remember { mutableStateOf(saved.rows) }
+    var colsText by remember { mutableStateOf(saved.cols) }
+    var spacingText by remember { mutableStateOf(saved.spacing) }
+    var designText by remember { mutableStateOf(saved.design) }
+    var swellText by remember { mutableStateOf(saved.swell) }
+    var truckText by remember { mutableStateOf(saved.truck) }
+    val grid = remember { mutableStateMapOf<String, String>().also { it.putAll(saved.grid) } }
+    val gridSnapshot = grid.toMap()
+    LaunchedEffect(rowsText, colsText, spacingText, designText, swellText, truckText, gridSnapshot) {
+        com.ukurlahan.pro.data.VolumeData(rowsText, colsText, spacingText, designText, swellText, truckText, gridSnapshot).save(ctx)
+    }
 
     val rows = (rowsText.toIntOrNull() ?: 2).coerceIn(2, 15)
     val cols = (colsText.toIntOrNull() ?: 2).coerceIn(2, 15)
@@ -78,14 +83,14 @@ fun VolumeScreen(onBack: () -> Unit) {
     ScreenScaffold(
         "Galian & Timbunan", onBack,
         actions = {
-            IconButton(onClick = {
+            ExportButton(setOf(com.ukurlahan.pro.data.Module.VOLUME)) {
                 val sb = StringBuilder("Grid,${rows}x$cols,jarak ${s} m\nElevasi rencana,${design ?: "-"}\n\n")
                 for (r in 0 until rows) {
                     sb.append((0 until cols).joinToString(",") { c -> grid["$r,$c"] ?: "" }).append('\n')
                 }
                 sb.append("\nGalian (m3),${cut.f(2)}\nTimbunan (m3),${fill.f(2)}\nElevasi seimbang,${balance?.f(3) ?: "-"}\n")
                 Store.share(ctx, "galian_timbunan_${Store.stamp()}.csv", sb.toString(), "text/csv")
-            }) { Icon(Icons.Default.Share, "Ekspor") }
+            }
         },
     ) { pad ->
         Column(
@@ -359,6 +364,15 @@ fun GuideScreen(onBack: () -> Unit) {
             "• Berjalan menyusuri batas lahan; di setiap sudut berhenti 5 detik lalu TANDAI SUDUT.\n" +
             "• Atau aktifkan mode otomatis agar titik direkam tiap beberapa meter.\n" +
             "• Hasil dapat diekspor ke KML lalu dibuka di Google Earth.",
+        "Proyek & ekspor laporan" to
+            "• Menu Proyek & Laporan: buat proyek (mis. Proyek Prigen, Proyek Malang). Semua pengukuran disimpan ke proyek AKTIF.\n" +
+            "• Ganti proyek dengan tombol Buka / aktifkan. Nama proyek aktif tampil di bawah judul setiap layar.\n" +
+            "• Ikon bagikan di setiap fitur: Ekspor PDF, Excel, Gambar HD (300 dpi), CSV, dan Kirim ke ASA Laporan.\n" +
+            "• File otomatis tersimpan di Download/ASA Earthwork (gambar di Pictures/ASA Earthwork).",
+        "ASA Laporan (rangkuman otomatis)" to
+            "• Pasang aplikasi kedua: ASA Laporan.\n" +
+            "• Tekan Kirim ke ASA Laporan → aplikasi terbuka dan membuat kesimpulan, penjelasan, kualitas data, dan rekomendasi.\n" +
+            "• Rangkuman dapat dibagikan ke WhatsApp, PDF, atau gambar HD.",
         "Akurasi yang realistis" to
             "• Sensor kemiringan HP setelah kalibrasi: ±0,05–0,1° → ±1–2 cm pada jarak 10–20 m. Jaga jarak bidik ≤ 20 m dan usahakan jarak BS ≈ FS.\n" +
             "• Jarak otomatis dari sudut: makin jauh makin kurang teliti.\n• GPS HP: ±3–5 m di tempat terbuka.\n" +

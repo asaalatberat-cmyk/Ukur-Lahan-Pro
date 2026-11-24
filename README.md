@@ -1,4 +1,23 @@
-# Ukur Lahan Pro – Aplikasi Android untuk Pekerjaan Tanah
+# Ukur Lahan Pro & ASA Laporan – PT. ASA RENTAL
+
+> Aplikasi internal khusus **Team Earthwork PT. ASA**. Tidak diperjualbelikan.
+
+Proyek ini menghasilkan **2 aplikasi**:
+- **Ukur Lahan Pro** (`app/`) – alat ukur lapangan, data disimpan per proyek, ekspor PDF / Excel / Gambar HD.
+- **ASA Laporan** (`laporan/`) – menerima data dari Ukur Lahan Pro lalu membuat rangkuman, kesimpulan, dan rekomendasi otomatis (offline).
+- `common/` – logo, branding, pembuat PDF/Excel/gambar yang dipakai keduanya.
+
+### Mengganti logo
+Timpa file `common/src/main/res/drawable-nodpi/logo_asa.png` dengan logo asli PT. ASA RENTAL
+(PNG persegi, mis. 512×512 px, nama file harus sama), lalu build ulang.
+
+### Proyek & ekspor
+- Menu **Proyek & Laporan**: buat/ubah/hapus proyek (mis. Proyek Prigen, Proyek Malang); semua pengukuran masuk ke proyek **aktif**.
+- Ikon bagikan di setiap fitur: **PDF**, **Excel (.xlsx)**, **Gambar HD (PNG 300 dpi)**, CSV, **Kirim ke ASA Laporan**.
+- File tersimpan otomatis di `Download/ASA Earthwork` (gambar di `Pictures/ASA Earthwork`).
+
+---
+
 
 Aplikasi Android (Kotlin + Jetpack Compose) yang menjadikan HP alat ukur lapangan:
 waterpass, sipat datar, "total station" sederhana, dan pengukur luas lahan.
@@ -22,7 +41,7 @@ Semua data tersimpan otomatis di HP dan bisa diekspor lewat tombol **Bagikan** (
 ### Opsi A – Tanpa install apa pun (GitHub, gratis)
 1. Buat repository baru di GitHub, upload seluruh isi folder ini.
 2. Buka tab **Actions** → workflow **Build APK** jalan otomatis (±5–8 menit).
-3. Setelah selesai (centang hijau), unduh artifact **UkurLahanPro-apk** → ekstrak → `app-debug.apk`.
+3. Setelah selesai (centang hijau), unduh artifact **APK-ASA-Earthwork** → ekstrak → `UkurLahanPro.apk` dan `ASA-Laporan.apk`.
 4. Kirim APK ke HP, buka, izinkan "Instal dari sumber tidak dikenal".
 
 ### Opsi B – Android Studio

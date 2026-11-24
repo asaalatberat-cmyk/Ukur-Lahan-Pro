@@ -12,8 +12,18 @@ android {
         applicationId = "com.ukurlahan.pro"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "2.0"
+    }
+
+    signingConfigs {
+        getByName("debug") {
+            // Kunci tetap agar APK hasil build berikutnya bisa langsung memperbarui aplikasi lama
+            storeFile = rootProject.file("asa-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
     }
 
     buildTypes {
@@ -35,6 +45,7 @@ android {
 }
 
 dependencies {
+    implementation(project(":common"))
     val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
     implementation(composeBom)
     implementation("androidx.core:core-ktx:1.15.0")

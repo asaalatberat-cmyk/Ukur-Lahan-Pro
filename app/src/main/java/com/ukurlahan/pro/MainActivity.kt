@@ -26,7 +26,7 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-enum class Screen { HOME, LEVEL, LEVELING, TOTAL_STATION, AREA, VOLUME, SLOPE, CALIBRATION, GUIDE }
+enum class Screen { HOME, LEVEL, LEVELING, TOTAL_STATION, AREA, VOLUME, SLOPE, CALIBRATION, GUIDE, PROJECTS }
 
 @Composable
 fun AppTheme(content: @Composable () -> Unit) {
@@ -62,5 +62,6 @@ fun AppRoot() {
         Screen.SLOPE -> SlopeScreen(back)
         Screen.CALIBRATION -> CalibrationScreen(back)
         Screen.GUIDE -> GuideScreen(back)
+        Screen.PROJECTS -> ProjectsScreen(back)
     }
 }

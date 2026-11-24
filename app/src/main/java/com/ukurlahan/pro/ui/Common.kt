@@ -52,10 +52,10 @@ fun Double.f(d: Int): String = String.format(Locale.US, "%.${d}f", this)
 fun Double.signed(d: Int): String = (if (this >= 0) "+" else "") + f(d)
 fun String.toNum(): Double? = trim().replace(',', '.').toDoubleOrNull()
 
-fun formatArea(m2: Double): String = when {
-    m2 >= 10000 -> "${m2.f(1)} m²  (${(m2 / 10000).f(4)} ha)"
-    else -> "${m2.f(2)} m²  (${(m2 / 100).f(2)} are)"
-}
+/** Luas utama dalam hektar (1 ha = 10.000 m²), m² sebagai keterangan. */
+fun formatArea(m2: Double): String = "${(m2 / 10000).f(4)} ha  (${m2.f(1)} m²)"
+
+fun formatHa(m2: Double): String = "${(m2 / 10000).f(4)} ha"
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -63,13 +63,21 @@ fun ScreenScaffold(
     title: String,
     onBack: () -> Unit,
     actions: @Composable RowScope.() -> Unit = {},
+    showProject: Boolean = true,
     content: @Composable (PaddingValues) -> Unit,
 ) {
+    val ctx = LocalContext.current
+    val projectName = remember { if (showProject) com.ukurlahan.pro.data.Projects.active(ctx).name else "" }
     Scaffold(
         modifier = Modifier.imePadding(),
         topBar = {
             TopAppBar(
-                title = { Text(title, maxLines = 1, fontWeight = FontWeight.Bold) },
+                title = {
+                    Column {
+                        Text(title, maxLines = 1, fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                        if (projectName.isNotBlank()) Text("📁 $projectName", maxLines = 1, fontSize = 11.sp, color = Accent)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onBack) { Icon(Icons.AutoMirrored.Filled.ArrowBack, "Kembali") }
                 },

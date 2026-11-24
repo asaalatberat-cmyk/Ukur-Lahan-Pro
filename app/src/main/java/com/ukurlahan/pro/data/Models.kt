@@ -58,8 +58,9 @@ data class LevelingData(
 
     companion object {
         const val KEY = "leveling"
-        fun load(ctx: Context): LevelingData = try {
-            val j = JSONObject(Store.load(ctx, KEY) ?: "{}")
+        fun load(ctx: Context): LevelingData = parse(Store.load(ctx, KEY))
+        fun parse(text: String?): LevelingData = try {
+            val j = JSONObject(text ?: "{}")
             val arr = j.optJSONArray("points") ?: JSONArray()
             LevelingData(
                 refName = j.optString("refName", "BM"),
@@ -115,8 +116,9 @@ data class TsData(
 
     companion object {
         const val KEY = "totalstation"
-        fun load(ctx: Context): TsData = try {
-            val j = JSONObject(Store.load(ctx, KEY) ?: "{}")
+        fun load(ctx: Context): TsData = parse(Store.load(ctx, KEY))
+        fun parse(text: String?): TsData = try {
+            val j = JSONObject(text ?: "{}")
             val arr = j.optJSONArray("points") ?: JSONArray()
             TsData(
                 j.optDouble("hi", 1.5), j.optDouble("ht", 0.0), j.optDouble("stElev", 100.0),
@@ -141,7 +143,7 @@ data class GeoPt(val lat: Double, val lon: Double, val acc: Double, val alt: Dou
 }
 
 object AreaStore {
-    private const val KEY = "area"
+    const val KEY = "area"
     fun save(ctx: Context, name: String, pts: List<GeoPt>) {
         val j = JSONObject().apply {
             put("name", name)
@@ -150,8 +152,9 @@ object AreaStore {
         Store.save(ctx, KEY, j.toString())
     }
 
-    fun load(ctx: Context): Pair<String, List<GeoPt>> = try {
-        val j = JSONObject(Store.load(ctx, KEY) ?: "{}")
+    fun load(ctx: Context): Pair<String, List<GeoPt>> = parse(Store.load(ctx, KEY))
+    fun parse(text: String?): Pair<String, List<GeoPt>> = try {
+        val j = JSONObject(text ?: "{}")
         val arr = j.optJSONArray("points") ?: JSONArray()
         j.optString("name", "Lahan 1") to (0 until arr.length()).map { GeoPt.from(arr.getJSONObject(it)) }
     } catch (_: Exception) {
@@ -198,4 +201,109 @@ object Geo {
     }
 
     fun perimeter(xy: List<Pair<Double, Double>>): Double = sides(xy, true).sum()
+}
+
+// ---------------------------------------------------------------- Galian & timbunan
+
+data class VolumeData(
+    val rows: String = "4",
+    val cols: String = "4",
+    val spacing: String = "5",
+    val design: String = "",
+    val swell: String = "25",
+    val truck: String = "7",
+    val grid: Map<String, String> = emptyMap(),
+) {
+    val nRows: Int get() = (rows.trim().toIntOrNull() ?: 2).coerceIn(2, 15)
+    val nCols: Int get() = (cols.trim().toIntOrNull() ?: 2).coerceIn(2, 15)
+
+    fun save(ctx: Context) {
+        val g = JSONObject()
+        grid.forEach { (k, v) -> if (v.isNotBlank()) g.put(k, v) }
+        val j = JSONObject().apply {
+            put("rows", rows); put("cols", cols); put("spacing", spacing); put("design", design)
+            put("swell", swell); put("truck", truck); put("grid", g)
+        }
+        Store.save(ctx, KEY, j.toString())
+    }
+
+    fun isEmpty(): Boolean = grid.values.none { it.isNotBlank() }
+
+    companion object {
+        const val KEY = "volume"
+        fun load(ctx: Context): VolumeData = parse(Store.load(ctx, KEY))
+        fun parse(text: String?): VolumeData = try {
+            val j = JSONObject(text ?: "{}")
+            val g = j.optJSONObject("grid") ?: JSONObject()
+            val map = mutableMapOf<String, String>()
+            g.keys().forEach { k -> map[k] = g.optString(k, "") }
+            VolumeData(
+                j.optString("rows", "4"), j.optString("cols", "4"), j.optString("spacing", "5"),
+                j.optString("design", ""), j.optString("swell", "25"), j.optString("truck", "7"), map,
+            )
+        } catch (_: Exception) {
+            VolumeData()
+        }
+    }
+}
+
+data class VolumeResult(
+    val filled: Int,
+    val missing: Int,
+    val area: Double,
+    val balance: Double?,
+    val design: Double?,
+    val cut: Double,
+    val fill: Double,
+    val loose: Double,
+    val trips: Int?,
+    val swellPct: Double,
+    val truck: Double,
+)
+
+/** Metode grid (borrow pit): bobot sudut 1, tepi 2, tengah 4. */
+object VolumeCalc {
+    private fun num(s: String?): Double? = s?.trim()?.replace(',', '.')?.toDoubleOrNull()
+
+    fun compute(d: VolumeData): VolumeResult {
+        val rows = d.nRows
+        val cols = d.nCols
+        val s = num(d.spacing) ?: 0.0
+        val design = num(d.design)
+        var sumW = 0.0
+        var sumWZ = 0.0
+        var cut = 0.0
+        var fill = 0.0
+        var missing = 0
+        var filled = 0
+        for (r in 0 until rows) for (c in 0 until cols) {
+            val z = num(d.grid["$r,$c"])
+            if (z == null) {
+                missing++
+            } else {
+                filled++
+                val edgeR = r == 0 || r == rows - 1
+                val edgeC = c == 0 || c == cols - 1
+                val w = if (edgeR && edgeC) 1.0 else if (edgeR || edgeC) 2.0 else 4.0
+                sumW += w
+                sumWZ += w * z
+                if (design != null) {
+                    val dh = z - design
+                    if (dh > 0) cut += w * dh else fill += w * -dh
+                }
+            }
+        }
+        val k = s * s / 4.0
+        cut *= k
+        fill *= k
+        val swell = (num(d.swell) ?: 25.0)
+        val truck = num(d.truck) ?: 7.0
+        val loose = cut * (1 + swell / 100.0)
+        return VolumeResult(
+            filled, missing, (rows - 1) * (cols - 1) * s * s,
+            if (sumW > 0) sumWZ / sumW else null, design, cut, fill, loose,
+            if (truck > 0 && design != null) kotlin.math.ceil(loose / truck).toInt() else null,
+            swell, truck,
+        )
+    }
 }
