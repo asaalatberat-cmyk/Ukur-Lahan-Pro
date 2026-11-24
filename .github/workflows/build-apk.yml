@@ -13,11 +13,16 @@ jobs:
         with:
           distribution: temurin
           java-version: '17'
-      - name: Build debug APK
+      - name: Build debug APK (Ukur Lahan Pro + ASA Laporan)
         run: |
           chmod +x gradlew
-          ./gradlew assembleDebug --no-daemon --stacktrace
+          ./gradlew :app:assembleDebug :laporan:assembleDebug --no-daemon --stacktrace
+      - name: Kumpulkan APK
+        run: |
+          mkdir -p apk
+          cp app/build/outputs/apk/debug/app-debug.apk apk/UkurLahanPro.apk
+          cp laporan/build/outputs/apk/debug/laporan-debug.apk apk/ASA-Laporan.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: UkurLahanPro-apk
-          path: app/build/outputs/apk/debug/*.apk
+          name: APK-ASA-Earthwork
+          path: apk/*.apk
